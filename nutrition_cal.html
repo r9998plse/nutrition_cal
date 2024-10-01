@@ -18,6 +18,13 @@
       th {
         background-color: #f2f2f2;
       }
+
+      /* 當螢幕寬度小於600px時，將 input 的寬度設定為50px */
+      @media (max-width: 600px) {
+        input {
+          width: 50px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -206,7 +213,7 @@
             <thead>
               <tr>
                 <th>食物類別</th>
-                <th>份數</th>
+                <th style="width:10%">份數</th>
                 <th>蛋白質 (g)</th>
                 <th>脂肪 (g)</th>
                 <th>醣類 (g)</th>
