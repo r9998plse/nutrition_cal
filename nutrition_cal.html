@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>健康計算器</title>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>六大類食物份量計算器</h1>
+
+    <h2>輸入您的資料</h2>
+    <form id="user-info-form">
+      <label for="height">身高 (cm):</label>
+      <input type="number" id="height" name="height" required />
+      <br /><br />
+      <label for="weight">體重 (kg):</label>
+      <input type="number" id="weight" name="weight" required />
+      <br /><br />
+      <button type="button" onclick="calculate()">計算</button>
+    </form>
+
+    <h2>計算結果</h2>
+    <div id="results"></div>
+
+    <script>
+      function calculate() {
+        const heightCm = parseFloat(document.getElementById('height').value)
+        const weightKg = parseFloat(document.getElementById('weight').value)
+
+        if (isNaN(heightCm) || isNaN(weightKg)) {
+          alert('請填入正確的數值！')
+          return
+        }
+
+        const heightM = heightCm / 100
+        const bmi = (weightKg / (heightM * heightM)).toFixed(1)
+        const idealWeight = (heightM * heightM * 22).toFixed(1)
+        const normalRangeLow = (idealWeight * 0.9).toFixed(1)
+        const normalRangeHigh = (idealWeight * 1.1).toFixed(1)
+
+        document.getElementById('results').innerHTML = `
+                <p>BMI: ${bmi}</p>
+                <p>理想體重: ${idealWeight} kg</p>
+                <p>正常範圍: ${normalRangeLow} kg ~ ${normalRangeHigh} kg</p>
+                <br>
+                <label for="activity-level">活動程度：</label>
+                <select id="activity-level" onchange="showWeightCategory()">
+                    <option value="">請選擇活動程度</option>
+                    <option value="臥床">臥床</option>
+                    <option value="輕度工作">輕度工作</option>
+                    <option value="中度工作">中度工作</option>
+                    <option value="重度工作">重度工作</option>
+                </select>
+                <br><br>
+                <div id="weight-category-section"></div>
+            `
+      }
+
+      function showWeightCategory() {
+        const activityLevel = document.getElementById('activity-level').value
+
+        if (activityLevel) {
+          document.getElementById('weight-category-section').innerHTML = `
+                    <label for="weight-category">自評體重：</label>
+                    <select id="weight-category">
+                        <option value="過重">過重</option>
+                        <option value="正常體重">正常體重</option>
+                        <option value="體重不足">體重不足</option>
+                    </select>
+                    <br><br>
+                    <button type="button" onclick="calculateCalories()">計算每日所需熱量</button>
+                    <br><br>
+                    <div id="calories-result"></div>
+                `
+        }
+      }
+
+      function calculateCalories() {
+        const activityLevel = document.getElementById('activity-level').value
+        const weightCategory = document.getElementById('weight-category').value
+        const idealWeight = parseFloat(
+          document
+            .querySelector('p:nth-of-type(2)')
+            .textContent.split(':')[1]
+            .trim()
+            .split(' ')[0]
+        )
+
+        let kcal_kg
+
+        if (activityLevel === '臥床') {
+          if (weightCategory === '過重') {
+            kcal_kg = 20
+          } else if (weightCategory === '正常體重') {
+            kcal_kg = 25
+          } else if (weightCategory === '體重不足') {
+            kcal_kg = 30
+          }
+        } else if (activityLevel === '輕度工作') {
+          if (weightCategory === '過重') {
+            kcal_kg = 25
+          } else if (weightCategory === '正常體重') {
+            kcal_kg = 30
+          } else if (weightCategory === '體重不足') {
+            kcal_kg = 35
+          }
+        } else if (activityLevel === '中度工作') {
+          if (weightCategory === '過重') {
+            kcal_kg = 30
+          } else if (weightCategory === '正常體重') {
+            kcal_kg = 35
+          } else if (weightCategory === '體重不足') {
+            kcal_kg = 40
+          }
+        } else if (activityLevel === '重度工作') {
+          if (weightCategory === '過重') {
+            kcal_kg = 35
+          } else if (weightCategory === '正常體重') {
+            kcal_kg = 40
+          } else if (weightCategory === '體重不足') {
+            kcal_kg = 45
+          }
+        }
+
+        const kcal_day = (idealWeight * kcal_kg).toFixed(1)
+
+        document.getElementById('calories-result').innerHTML = `
+                <p>每公斤體重所需熱量: ${kcal_kg} kcal/kg</p>
+                <p>每日所需熱量: ${kcal_day} kcal/day</p>
+                <br>
+                <label for="carbohydrate_pct">醣類需求百分比 (50~60%)：</label>
+                <input type="number" id="carbohydrate_pct" required>
+                <br><br>
+                <label for="protein_pct">蛋白質需求百分比 (10~20%)：</label>
+                <input type="number" id="protein_pct" required>
+                <br><br>
+                <label for="lipids_pct">脂質需求百分比 (20~30%)：</label>
+                <input type="number" id="lipids_pct" required>
+                <br><br>
+                <button type="button" onclick="calculateNutrients(${kcal_day})">計算三大營養素需求</button>
+                <br><br>
+                <div id="nutrients-result"></div>
+            `
+      }
+
+      function calculateNutrients(kcal_day) {
+        const carbohydrate_pct = parseFloat(
+          document.getElementById('carbohydrate_pct').value
+        )
+        const protein_pct = parseFloat(
+          document.getElementById('protein_pct').value
+        )
+        const lipids_pct = parseFloat(
+          document.getElementById('lipids_pct').value
+        )
+
+        const total_pct = carbohydrate_pct + protein_pct + lipids_pct
+
+        if (total_pct != 100) {
+          alert('三大營養素百分比總和不能不等於100%！')
+          return
+        }
+
+        const carbohydrate_total = (
+          (kcal_day * (carbohydrate_pct / 100)) /
+          4
+        ).toFixed(1)
+        const protein_total = ((kcal_day * (protein_pct / 100)) / 4).toFixed(1)
+        const lipids_total = ((kcal_day * (lipids_pct / 100)) / 9).toFixed(1)
+
+        document.getElementById('nutrients-result').innerHTML = `
+                <p>三大營養素分配百分比: 醣類 ${carbohydrate_pct}% 、蛋白質 ${protein_pct}% 、脂質 ${lipids_pct}%</p>
+                <p>醣類需求: ${kcal_day}(kcal) * ${carbohydrate_pct}% / 4(kcal/g) = ${carbohydrate_total} g</p>
+                <p>蛋白質需求: ${kcal_day}(kcal) * ${protein_pct}% / 4(kcal/g) = ${protein_total} g</p>
+                <p>脂質需求: ${kcal_day}(kcal) * ${lipids_pct}% / 9(kcal/g) = ${lipids_total} g</p>
+                <br>
+                <button type="button" onclick="showFoodTable(${carbohydrate_total}, ${protein_total}, ${lipids_total} , ${kcal_day})">計算六大類食物份數</button>
+                <br><br>
+                <div id="food-table"></div>
+            `
+      }
+
+      function showFoodTable(
+        carbohydrate_total,
+        protein_total,
+        lipids_total,
+        kcal_day
+      ) {
+        document.getElementById('food-table').innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>食物類別</th>
+                <th>份數</th>
+                <th>蛋白質 (g)</th>
+                <th>脂肪 (g)</th>
+                <th>醣類 (g)</th>
+                <th>熱量 (kcal)</th>
+              </tr>
+            </thead>
+            <tbody id="food-table-body">
+              <!-- 乳品類 -->
+              <tr>
+                <td>乳品類(全脂)</td>
+                <td><input type="number" id="dairy-full-serving" min="0" onchange="calculateTotal()"></td>
+                <td id="dairy-full-protein">0</td>
+                <td id="dairy-full-fat">0</td>
+                <td id="dairy-full-carbs">0</td>
+                <td id="dairy-full-calories">0</td>
+              </tr>
+              <tr>
+                <td>乳品類(低脂)</td>
+                <td><input type="number" id="dairy-low-serving" min="0" onchange="calculateTotal()"></td>
+                <td id="dairy-low-protein">0</td>
+                <td id="dairy-low-fat">0</td>
+                <td id="dairy-low-carbs">0</td>
+                <td id="dairy-low-calories">0</td>
+              </tr>
+              <tr>
+                <td>乳品類(脫脂)</td>
+                <td><input type="number" id="dairy-skim-serving" min="0" onchange="calculateTotal()"></td>
+                <td id="dairy-skim-protein">0</td>
+                <td id="dairy-skim-fat">0</td>
+                <td id="dairy-skim-carbs">0</td>
+                <td id="dairy-skim-calories">0</td>
+              </tr>
+              <!-- 蔬菜類 -->
+              <tr>
+                <td>蔬菜類</td>
+                <td><input type="number" id="vegetable-serving" min="0" onchange="calculateTotal()"></td>
+                <td id="vegetable-protein">0</td>
+                <td id="vegetable-fat">0</td>
+                <td id="vegetable-carbs">0</td>
+                <td id="vegetable-calories">0</td>
+              </tr>
+              <!-- 水果類 -->
+              <tr>
+                <td>水果類</td>
+                <td><input type="number" id="fruit-serving" min="0" onchange="calculateTotal()"></td>
+                <td id="fruit-protein">0</td>
+                <td id="fruit-fat">0</td>
+                <td id="fruit-carbs">0</td>
+                <td id="fruit-calories">0</td>
+              </tr>
+            </tbody>
+          </table>
+          <br>
+
+          <div id="grains-recommendation"></div>
+
+          <table>
+            <tbody id="grains-table">
+              <!-- 全穀雜糧類 -->
+              <tr>
+                <td>全穀雜糧類</td>
+                <td><input type="number" id="grains-serving" min="0" onchange="calculateTotal()"></td>
+                <td id="grains-protein">0</td>
+                <td id="grains-fat">0</td>
+                <td id="grains-carbs">0</td>
+                <td id="grains-calories">0</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <br>
+          <div id="protein-recommendation"></div>
+
+          <table>
+            <tbody id="protein-table">
+              <!-- 豆魚蛋肉類 -->
+              <tr>
+                <td>豆魚蛋肉類(低脂)</td>
+                <td><input type="number" id="protein-low-serving" min="0" onchange="calculateTotal()"></td>
+                <td id="protein-low-protein">0</td>
+                <td id="protein-low-fat">0</td>
+                <td id="protein-low-carbs">0</td>
+                <td id="protein-low-calories">0</td>
+              </tr>
+              <tr>
+                <td>豆魚蛋肉類(中脂)</td>
+                <td><input type="number" id="protein-mid-serving" min="0" onchange="calculateTotal()"></td>
+                <td id="protein-mid-protein">0</td>
+                <td id="protein-mid-fat">0</td>
+                <td id="protein-mid-carbs">0</td>
+                <td id="protein-mid-calories">0</td>
+              </tr>
+              <tr>
+                <td>豆魚蛋肉類(高脂)</td>
+                <td><input type="number" id="protein-high-serving" min="0" onchange="calculateTotal()"></td>
+                <td id="protein-high-protein">0</td>
+                <td id="protein-high-fat">0</td>
+                <td id="protein-high-carbs">0</td>
+                <td id="protein-high-calories">0</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <br>
+          <div id="fat-recommendation"></div>
+
+          <table>
+            <tbody id="fat-table">
+              <!-- 油脂與堅果種子類 -->
+              <tr>
+                <td>油脂與堅果種子類</td>
+                <td><input type="number" id="fat-serving" min="0" onchange="calculateTotal()"></td>
+                <td id="fat-protein">0</td>
+                <td id="fat-fat">0</td>
+                <td id="fat-carbs">0</td>
+                <td id="fat-calories">0</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <br>
+          <table id="total-table">
+            <thead>
+              <tr>
+                <th>總計</th>
+                <th>蛋白質 (g)</th>
+                <th>脂肪 (g)</th>
+                <th>醣類 (g)</th>
+                <th>熱量 (kcal)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>實際</td>
+                <td id="total-protein">0</td>
+                <td id="total-fat">0</td>
+                <td id="total-carbs">0</td>
+                <td id="total-calories">0</td>
+              </tr>  
+              <tr>
+                <td>預估</td>
+                <td id="total-protein-demand">${protein_total}</td>
+                <td id="total-fat-demand">${lipids_total}</td>
+                <td id="total-carbs-demand">${carbohydrate_total}</td>
+                <td id="total-calories-demand">${kcal_day}</td>
+              </tr>
+              
+            </tbody>
+          </table>
+        `
+      }
+
+      function calculateTotal() {
+        // 乳品類
+        const dairyFullServing =
+          parseFloat(document.getElementById('dairy-full-serving').value) || 0
+        const dairyLowServing =
+          parseFloat(document.getElementById('dairy-low-serving').value) || 0
+        const dairySkimServing =
+          parseFloat(document.getElementById('dairy-skim-serving').value) || 0
+        // 蔬菜類
+        const vegetableServing =
+          parseFloat(document.getElementById('vegetable-serving').value) || 0
+        // 水果類
+        const fruitServing =
+          parseFloat(document.getElementById('fruit-serving').value) || 0
+        // 全穀雜糧類
+        const grainsServing =
+          parseFloat(document.getElementById('grains-serving').value) || 0
+        // 豆魚蛋肉類
+        const proteinLowServing =
+          parseFloat(document.getElementById('protein-low-serving').value) || 0
+        const proteinMidServing =
+          parseFloat(document.getElementById('protein-mid-serving').value) || 0
+        const proteinHighServing =
+          parseFloat(document.getElementById('protein-high-serving').value) || 0
+        // 油脂與堅果種子類
+        const fatServing =
+          parseFloat(document.getElementById('fat-serving').value) || 0
+
+        // 計算各類食物營養素
+        // 乳品類
+        document.getElementById('dairy-full-protein').textContent = (
+          8 * dairyFullServing
+        ).toFixed(1)
+        document.getElementById('dairy-full-fat').textContent = (
+          8 * dairyFullServing
+        ).toFixed(1)
+        document.getElementById('dairy-full-carbs').textContent = (
+          12 * dairyFullServing
+        ).toFixed(1)
+        document.getElementById('dairy-full-calories').textContent = (
+          150 * dairyFullServing
+        ).toFixed(1)
+
+        document.getElementById('dairy-low-protein').textContent = (
+          8 * dairyLowServing
+        ).toFixed(1)
+        document.getElementById('dairy-low-fat').textContent = (
+          4 * dairyLowServing
+        ).toFixed(1)
+        document.getElementById('dairy-low-carbs').textContent = (
+          12 * dairyLowServing
+        ).toFixed(1)
+        document.getElementById('dairy-low-calories').textContent = (
+          120 * dairyLowServing
+        ).toFixed(1)
+
+        document.getElementById('dairy-skim-protein').textContent = (
+          8 * dairySkimServing
+        ).toFixed(1)
+        document.getElementById('dairy-skim-fat').textContent = '0'
+        document.getElementById('dairy-skim-carbs').textContent = (
+          12 * dairySkimServing
+        ).toFixed(1)
+        document.getElementById('dairy-skim-calories').textContent = (
+          80 * dairySkimServing
+        ).toFixed(1)
+        // 蔬菜類
+        document.getElementById('vegetable-protein').textContent = (
+          1 * vegetableServing
+        ).toFixed(1)
+        document.getElementById('vegetable-fat').textContent = '0'
+        document.getElementById('vegetable-carbs').textContent = (
+          5 * vegetableServing
+        ).toFixed(1)
+        document.getElementById('vegetable-calories').textContent = (
+          25 * vegetableServing
+        ).toFixed(1)
+        // 水果類
+        document.getElementById('fruit-protein').textContent = '0'
+        document.getElementById('fruit-fat').textContent = '0'
+        document.getElementById('fruit-carbs').textContent = (
+          15 * fruitServing
+        ).toFixed(1)
+        document.getElementById('fruit-calories').textContent = (
+          60 * fruitServing
+        ).toFixed(1)
+        // 全穀雜糧類
+        document.getElementById('grains-protein').textContent = (
+          2 * grainsServing
+        ).toFixed(1)
+        document.getElementById('grains-fat').textContent = '0'
+        document.getElementById('grains-carbs').textContent = (
+          15 * grainsServing
+        ).toFixed(1)
+        document.getElementById('grains-calories').textContent = (
+          70 * grainsServing
+        ).toFixed(1)
+        // 豆魚蛋肉類
+        document.getElementById('protein-low-protein').textContent = (
+          7 * proteinLowServing
+        ).toFixed(1)
+        document.getElementById('protein-low-fat').textContent = (
+          3 * proteinLowServing
+        ).toFixed(1)
+        document.getElementById('protein-low-carbs').textContent = '0'
+        document.getElementById('protein-low-calories').textContent = (
+          55 * proteinLowServing
+        ).toFixed(1)
+
+        document.getElementById('protein-mid-protein').textContent = (
+          7 * proteinMidServing
+        ).toFixed(1)
+        document.getElementById('protein-mid-fat').textContent = (
+          5 * proteinMidServing
+        ).toFixed(1)
+        document.getElementById('protein-mid-carbs').textContent = '0'
+        document.getElementById('protein-mid-calories').textContent = (
+          75 * proteinMidServing
+        ).toFixed(1)
+
+        document.getElementById('protein-high-protein').textContent = (
+          7 * proteinHighServing
+        ).toFixed(1)
+        document.getElementById('protein-high-fat').textContent = (
+          10 * proteinHighServing
+        ).toFixed(1)
+        document.getElementById('protein-high-carbs').textContent = '0'
+        document.getElementById('protein-high-calories').textContent = (
+          120 * proteinHighServing
+        ).toFixed(1)
+        // 油脂與堅果種子類
+        document.getElementById('fat-protein').textContent = '0'
+        document.getElementById('fat-fat').textContent = (
+          5 * fatServing
+        ).toFixed(1)
+        document.getElementById('fat-carbs').textContent = '0'
+        document.getElementById('fat-calories').textContent = (
+          45 * fatServing
+        ).toFixed(1)
+
+        // 計算總計
+        const totalProtein = (
+          8 * dairyFullServing +
+          8 * dairyLowServing +
+          8 * dairySkimServing +
+          1 * vegetableServing +
+          2 * grainsServing +
+          7 * proteinLowServing +
+          7 * proteinMidServing +
+          7 * proteinHighServing
+        ).toFixed(1)
+        const totalFat = (
+          8 * dairyFullServing +
+          4 * dairyLowServing +
+          3 * proteinLowServing +
+          5 * proteinMidServing +
+          10 * proteinHighServing +
+          5 * fatServing
+        ).toFixed(1)
+        const totalCarbs = (
+          12 * dairyFullServing +
+          12 * dairyLowServing +
+          12 * dairySkimServing +
+          5 * vegetableServing +
+          15 * fruitServing +
+          15 * grainsServing
+        ).toFixed(1)
+        const totalCalories = (
+          150 * dairyFullServing +
+          120 * dairyLowServing +
+          80 * dairySkimServing +
+          25 * vegetableServing +
+          60 * fruitServing +
+          70 * grainsServing +
+          55 * proteinLowServing +
+          75 * proteinMidServing +
+          120 * proteinHighServing +
+          45 * fatServing
+        ).toFixed(1)
+
+        document.getElementById('total-protein').textContent = totalProtein
+        document.getElementById('total-fat').textContent = totalFat
+        document.getElementById('total-carbs').textContent = totalCarbs
+        document.getElementById('total-calories').textContent = totalCalories
+
+        const carbohydrateDemand = parseFloat(
+          document.getElementById('total-carbs-demand').textContent
+        )
+        const proteinDemand = parseFloat(
+          document.getElementById('total-protein-demand').textContent
+        )
+        const lipidsDemand = parseFloat(
+          document.getElementById('total-fat-demand').textContent
+        )
+
+        // 計算全穀雜糧類建議
+        const dairyCarbs =
+          12 * dairyFullServing + 12 * dairyLowServing + 12 * dairySkimServing
+        const grainsRecommendation = (
+          (carbohydrateDemand -
+            dairyCarbs -
+            5 * vegetableServing -
+            15 * fruitServing) /
+          15
+        ).toFixed(1)
+        document.getElementById('grains-recommendation').innerHTML = `
+          <p>醣類需求(份數)(四捨五入至小數點後第一位): (${carbohydrateDemand} - ${dairyCarbs} - ${
+          5 * vegetableServing
+        } - ${15 * fruitServing}) / 15 = ${grainsRecommendation}</p>
+        `
+
+        // 計算豆魚蛋肉類建議
+        const dairyProtein =
+          8 * dairyFullServing + 8 * dairyLowServing + 8 * dairySkimServing
+        const proteinRecommendation = (
+          (proteinDemand -
+            dairyProtein -
+            1 * vegetableServing -
+            2 * grainsServing) /
+          7
+        ).toFixed(1)
+        document.getElementById('protein-recommendation').innerHTML = `
+          <p>蛋白質需求(份數)(四捨五入至小數點後第一位): (${proteinDemand} - ${dairyProtein} - ${
+          1 * vegetableServing
+        } - ${2 * grainsServing}) / 7 = ${proteinRecommendation}</p>
+        `
+
+        // 計算油脂與堅果種子類建議
+        const dairyFat = 8 * dairyFullServing + 4 * dairyLowServing
+        const proteinFat =
+          3 * proteinLowServing +
+          5 * proteinMidServing +
+          10 * proteinHighServing
+        const fatRecommendation = (
+          (lipidsDemand - dairyFat - proteinFat) /
+          5
+        ).toFixed(1)
+        document.getElementById('fat-recommendation').innerHTML = `
+          <p>脂肪需求(份數)(四捨五入至小數點後第一位): (${lipidsDemand} - ${dairyFat} - ${proteinFat}) / 5 = ${fatRecommendation}</p>
+        `
+      }
+    </script>
+  </body>
+</html>
